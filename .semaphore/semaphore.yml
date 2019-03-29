@@ -1,0 +1,20 @@
+version: v1.0
+name: CookingKernol
+agent:
+  machine:
+    type: e1-standard-8
+    os_image: ubuntu1804
+blocks:
+  - name: "Build"
+    task:
+      secrets:
+        - name: tg_token
+      env_vars:
+        - name: APP_ENV
+          value: prod
+      jobs:
+      - name: Compile Kernol
+        commands:
+          - checkout
+          - install-package ccache bc bash git-core gnupg build-essential zip curl make automake autogen autoconf autotools-dev libtool shtool python m4 gcc libtool zlib1g-dev
+          - bash .semaphore/compile-kernel.sh
