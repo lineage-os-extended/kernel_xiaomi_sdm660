@@ -50,7 +50,7 @@ function finerr() {
 # Send sticker
 function tg_sendstick() {
 	curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendSticker" \
-		-d sticker="CAADBQADgQADuMZ9GebdeJ3qOSmSAg" \
+		-d sticker="CAADBQADCgADVxIpHaFgYtltlYK2Ag" \
 		-d chat_id="$TELEGRAM_ID" >> /dev/null
 }
 
@@ -66,13 +66,13 @@ function fin() {
 # Main environtment
 KERNEL_DIR=${HOME}/msm-4.4-tulip
 KERN_IMG=$KERNEL_DIR/out/arch/arm64/boot/Image.gz-dtb
-BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 ZIP_DIR=$KERNEL_DIR/AnyKernel2
+BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 CONFIG=lavender-perf_defconfig
 CORES=$(grep -c ^processor /proc/cpuinfo)
 THREAD="-j$CORES"
-CROSS_COMPILE+="ccache "
-CROSS_COMPILE+="$PWD/stock/bin/aarch64-linux-android-"
+PATH="${KERNEL_DIR}/clang/bin:${KERNEL_DIR}/stock/bin:${PATH}"
+KBUILD_COMPILER_STRING="$(clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')"
 
 # Export
 export JOBS="$(grep -c '^processor' /proc/cpuinfo)"
@@ -80,17 +80,21 @@ export ARCH=arm64
 export SUBARCH=arm64
 export KBUILD_BUILD_USER="ramakun"
 export CROSS_COMPILE
+export PATH
+export KBUILD_COMPILER_STRING
 
 # Install build package
-install-package --update-new ccache bc bash git-core gnupg build-essential \
+install-package --update-new bc bash git-core gnupg build-essential \
 	zip curl make automake autogen autoconf autotools-dev libtool shtool python \
-	m4 gcc libtool zlib1g-dev
+	m4 gcc libtool zlib1g-dev gcc-aarch64-linux-gnu
 
 # Clone toolchain
-git clone https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 -b android-9.0.0_r34 --depth=1 stock
+git clone https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 --depth=1 stock
 
 # Clone AnyKernel2
 git clone https://github.com/rama982/AnyKernel2 -b lavender-miui
+wget https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/master/clang-r353983b.tar.gz
+mkdir clang && tar xzxf *.tar.gz -C clang
 
 # Build start
 DATE=`date`
@@ -98,14 +102,19 @@ BUILD_START=$(date +"%s")
 
 tg_sendstick
 
-tg_channelcast "<b>GENOM MIUI</b> kernel new build!" \
-		"For device <b>LAVENDER</b> (Redmi Note 7)" \
-		"At branch <code>${BRANCH}</code>" \
-		"Under commit <code>$(git log --pretty=format:'"%h : %s"' -1)</code>" \
-		"Started on <code>$(date)</code>"
+tg_channelcast "Genom Kernel For MIUI ROM new build!" \
+	"For device <b>LAVENDER</b> (Redmi Note 7)" \
+	"Using toolchain: <code>$(clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')</code>" \
+	"At branch <code>${BRANCH}</code>" \
+	"With latest commit <code>$(git log --pretty=format:'"%h : %s"' -1)</code>" \
+	"Started on <code>$(date)</code>"
 
 make  O=out $CONFIG $THREAD
-make  O=out $THREAD
+make -j$(nproc --all) O=out \
+                      ARCH=arm64 \
+                      CC=clang \
+                      CLANG_TRIPLE=aarch64-linux-gnu- \
+                      CROSS_COMPILE=aarch64-linux-android-
 
 BUILD_END=$(date +"%s")
 DIFF=$(($BUILD_END - $BUILD_START))
@@ -115,6 +124,8 @@ if ! [ -a $KERN_IMG ]; then
 	finerr
 	exit 1
 fi
+
+echo "Build took $(($DIFF / 60)) minute(s) and $(($DIFF % 60)) seconds."
 
 cd $ZIP_DIR
 make clean &>/dev/null
