@@ -183,16 +183,8 @@ endif
 
 dtb-$(CONFIG_ARCH_MSMHAMSTER) += msmhamster-rumi.dtb
 
-ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
-dtbo-$(CONFIG_ARCH_SDM660) += \
- sdm660-mtp-overlay.dtbo
-
-
-sdm660-mtp-overlay.dtbo-base := sdm660-mtp_f7a.dtb
-#sdm660-cdp-overlay.dtbo-base := sdm660-mtp_f7a.dtb
-else
-dtb-$(CONFIG_ARCH_SDM660) += sdm660-mtp_f7a.dtb
-endif
+dtb-$(CONFIG_ARCH_SDM660) += sdm660-lavender-v1.dtb \
+	sdm660-lavender-v2.dtb
 
 dtb-$(CONFIG_ARCH_SDM630) += sdm630-rumi.dtb \
 	sdm630-pm660a-rumi.dtb \
