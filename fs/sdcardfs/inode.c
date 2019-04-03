@@ -21,6 +21,7 @@
 #include "sdcardfs.h"
 #include <linux/fs_struct.h>
 #include <linux/ratelimit.h>
+#include <linux/sched.h>
 
 const struct cred *override_fsids(struct sdcardfs_sb_info *sbi,
 		struct sdcardfs_inode_data *data)
@@ -76,7 +77,6 @@ static int sdcardfs_create(struct inode *dir, struct dentry *dentry,
 	}
 
 	/* save current_cred and override it */
-
 	saved_cred = override_fsids(SDCARDFS_SB(dir->i_sb),
 					SDCARDFS_I(dir)->data);
 	if (!saved_cred)
@@ -143,7 +143,6 @@ static int sdcardfs_unlink(struct inode *dir, struct dentry *dentry)
 	}
 
 	/* save current_cred and override it */
-
 	saved_cred = override_fsids(SDCARDFS_SB(dir->i_sb),
 						SDCARDFS_I(dir)->data);
 	if (!saved_cred)
@@ -310,7 +309,7 @@ static int sdcardfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode
 				&& (qstr_case_eq(&dentry->d_name, &q_data)))) {
 		revert_fsids(saved_cred);
 		saved_cred = override_fsids(sbi,
-					SDCARDFS_I(dentry->d_inode)->data);
+					SDCARDFS_I(d_inode(dentry))->data);
 		if (!saved_cred) {
 			pr_err("sdcardfs: failed to set up .nomedia in %s: %d\n",
 						lower_path.dentry->d_name.name,
@@ -330,6 +329,7 @@ out:
 	task_lock(current);
 	current->fs = saved_fs;
 	task_unlock(current);
+
 	free_fs_struct(copied_fs);
 out_unlock:
 	sdcardfs_put_lower_path(dentry, &lower_path);
