@@ -10,7 +10,7 @@
 
 git clone https://github.com/fabianonline/telegram.sh telegram
 
-TELEGRAM_ID=-1001465615408
+TELEGRAM_ID=-1001232319637
 
 TELEGRAM=telegram/telegram
 
@@ -148,11 +148,12 @@ for MODULES in $(find "${OUTDIR}" -name '*.ko'); do
     find "${OUTDIR}" -name '*.ko' -exec cp {} "${VENDOR_MODULEDIR}" \;
 	case ${MODULES} in
 			*/wlan.ko)
-		mv "${MODULES}" "${VENDOR_MODULEDIR}/qca_cld3_wlan.ko" ;;
+		cp "${MODULES}" "${VENDOR_MODULEDIR}/qca_cld3_wlan.ko" ;;
 
 	esac
 done
 echo -e "\n(i) Done moving modules"
+rm "${VENDOR_MODULEDIR}/wlan.ko"
 
 cd $ZIP_DIR
 cp $KERN_IMG $ZIP_DIR/zImage
